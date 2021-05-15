@@ -5,8 +5,6 @@ defmodule CAIData.API do
   crash if there is no connection to the node running CAIData.
   """
 
-	alias CAIData.CharacterSession
-
   @type info_type ::
           :vehicle
           | :experience
@@ -15,35 +13,52 @@ defmodule CAIData.API do
           | :zone
           | :world
           | :faction
+          | :ivi_weapon_ids
 
+  @doc """
+  Retrieve static info from CAIData.
+  """
   @spec get_info(info_type) :: map()
+  def get_info(:ivi_weapon_ids), do: get_data(CAIData, :ivi_weapon_ids, [])
+
   def get_info(type) do
-    get_data(CAIData, String.to_existing_atom("#{type}_info"), [])
+    # Yes, the dev can shoot themself in the foot if they don't follow the typespec ¯\_(ツ)_/¯
+    get_data(CAIData, String.to_atom("#{type}_info"), [])
   end
 
-	@spec get_session(String.t()) :: {:ok, map()} | :none
+  @doc """
+  Retrieves a character's current session, or the most recent session if they
+  are offline.
+  """
+  @spec get_session(String.t()) :: {:ok, map()} | :none
   def get_session(character_id) do
-    with nil <- get_data(CAIData, :get_session, [character_id]),
-         nil <- get_data(CAIData, :get_active_session, [character_id]) do
+    with nil <- get_data(CAIData, :get_active_session, [character_id]),
+         nil <- get_data(CAIData, :get_session, [character_id]) do
       :none
     else
-      session -> {:ok, struct(CharacterSession, Map.delete(session, :__struct__))}
+      session -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
-	@spec get_session_by_name(String.t()) :: {:ok, map()} | :none
+  @doc """
+  Retrieves a character's most recent session by name.
+  """
+  @spec get_session_by_name(String.t()) :: {:ok, map()} | :none
   def get_session_by_name(character_name) do
     case get_data(CAIData, :get_session_by_name, [character_name]) do
       nil -> :none
-      session -> {:ok, struct(CharacterSession, Map.delete(session, :__struct__))}
+      session -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
-	@spec get_all_sessions(String.t()) :: {:ok, map()} | :none
+  @doc """
+  Retrieves all of a character's stored sessions.
+  """
+  @spec get_all_sessions(String.t()) :: {:ok, map()} | :none
   def get_all_sessions(character_id) do
-		case get_data(CAIData, :get_all_sessions, [character_id]) do
+    case get_data(CAIData, :get_all_sessions, [character_id]) do
       nil -> :none
-      sessions -> {:ok, Enum.map(sessions, &struct(CharacterSession, Map.delete(&1, :__struct__)))}
+      sessions -> {:ok, Enum.map(sessions, &Map.drop(&1, [:__struct__, :__meta__]))}
     end
   end
 
