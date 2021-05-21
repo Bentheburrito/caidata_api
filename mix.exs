@@ -15,7 +15,7 @@ defmodule CAIData.API.MixProject do
   def application do
     [
       extra_applications: [:logger],
-			env: [datanode: "data"]
+			env: []
     ]
   end
 

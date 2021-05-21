@@ -32,11 +32,12 @@ defmodule CAIData.API do
   """
   @spec get_session(String.t()) :: {:ok, map()} | :none
   def get_session(character_id) do
-    with nil <- get_data(CAIData, :get_active_session, [character_id]),
+    with :none <- get_data(CAIData, :get_active_session, [character_id]),
          nil <- get_data(CAIData, :get_session, [character_id]) do
       :none
     else
-      session -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+      {:ok, session} -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+			session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
@@ -45,9 +46,12 @@ defmodule CAIData.API do
   """
   @spec get_session_by_name(String.t()) :: {:ok, map()} | :none
   def get_session_by_name(character_name) do
-    case get_data(CAIData, :get_session_by_name, [character_name]) do
-      nil -> :none
-      session -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+    with :none <- get_data(CAIData, :get_active_session_by_name, [character_name]),
+         nil <- get_data(CAIData, :get_session_by_name, [character_name]) do
+      :none
+    else
+      {:ok, session} -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+			session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
@@ -63,8 +67,10 @@ defmodule CAIData.API do
   end
 
   defp get_data(module, fn_name, args) do
+		datanode = Application.get_env(:caidata_api, :data_hostname, "data@" <> (:inet.gethostname |> elem(1) |> List.to_string()) |> String.to_atom())
+
     Task.Supervisor.async(
-      {CAIData.DataTasks, Application.get_env(:caidata_api, :data_hostname)},
+      {CAIData.DataTasks, datanode},
       module,
       fn_name,
       args
