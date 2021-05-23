@@ -37,7 +37,7 @@ defmodule CAIData.API do
       :none
     else
       {:ok, session} -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
-			session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+      session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
@@ -51,7 +51,7 @@ defmodule CAIData.API do
       :none
     else
       {:ok, session} -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
-			session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
+      session when is_map(session) -> {:ok, Map.drop(session, [:__struct__, :__meta__])}
     end
   end
 
@@ -67,7 +67,13 @@ defmodule CAIData.API do
   end
 
   defp get_data(module, fn_name, args) do
-		datanode = Application.get_env(:caidata_api, :data_hostname, "data@" <> (:inet.gethostname |> elem(1) |> List.to_string()) |> String.to_atom())
+
+    datanode =
+      with nil <- Application.get_env(:caidata_api, :data_node),
+           host = :inet.gethostname() |> elem(1) |> List.to_string(),
+           shortname <- Application.get_env(:caidata_api, :data_shortname, "data") do
+        :"#{shortname}@#{host}"
+      end
 
     Task.Supervisor.async(
       {CAIData.DataTasks, datanode},
